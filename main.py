@@ -1,14 +1,14 @@
 import cv2
-import numpy as np
 import matplotlib.pyplot as plt
 from detectors.HSVDetector import HSVDetector
 from utils.roi_selector import select_roi
 
-video_path = "videos/Video1_husky.mp4"
+video_name = "Video1_husky"
+video_path = f"videos/{video_name}.mp4"
 roi = select_roi(video_path)
 cap = cv2.VideoCapture(video_path)
 
-output_video_path = "output/trajectory.mp4"
+output_video_path = f"output/trajectory_{video_name}.mp4"
 
 detector_type = "HSV"
 
@@ -90,4 +90,4 @@ plt.ylabel('Ângulo')
 plt.legend()
 
 plt.tight_layout()
-plt.savefig("output/amostras.png")
+plt.savefig(f"output/amostras_{video_name}.png")
