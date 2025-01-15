@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from detectors.HSVDetector import HSVDetector
 from utils.roi_selector import select_roi
 
-video_name = "Video1_husky"
+video_name = "video2_husky"
 video_path = f"videos/{video_name}.mp4"
 roi = select_roi(video_path)
 cap = cv2.VideoCapture(video_path)
