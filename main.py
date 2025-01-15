@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from detectors.HSVDetector import HSVDetector
 from utils.roi_selector import select_roi
 
-video_name = "video2_husky"
+video_name = "Video1_husky"
 video_path = f"videos/{video_name}.mp4"
 roi = select_roi(video_path)
 cap = cv2.VideoCapture(video_path)
@@ -49,10 +49,23 @@ while cap.isOpened():
     if box is not None:
         cv2.drawContours(frame, [box], 0, (0, 255, 0), 2)
         if rect:
-            center = tuple(map(int, rect[0]))
-            angle = rect[2]
-            poses.append((frame_count, center[0], center[1], angle))
-            trajectory.append(center)
+          center = tuple(map(int, rect[0]))
+          width, height = rect[1]
+          angle = rect[2]
+
+          # Ajuste do ângulo
+          if width < height:
+              angle = 90 + angle
+
+          # Exibir o ângulo ajustado
+          angle_text = f"Angle: {angle:.1f}"
+          cv2.putText(
+              frame, angle_text, (center[0] + 10, center[1] - 10),
+              cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
+          )
+
+          poses.append((frame_count, center[0], center[1], angle))
+          trajectory.append(center)
 
     for point in trajectory:
         cv2.circle(frame, point, 2, (255, 0, 0), -1)
