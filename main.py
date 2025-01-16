@@ -2,8 +2,10 @@ import cv2
 import matplotlib.pyplot as plt
 from detectors.HSVDetector import HSVDetector
 from utils.roi_selector import select_roi
+import numpy as np
+import collections
 
-video_name = "Video1_husky"
+video_name = "video2_husky"
 video_path = f"videos/{video_name}.mp4"
 roi = select_roi(video_path)
 cap = cv2.VideoCapture(video_path)
@@ -23,10 +25,6 @@ if detector_type == "HSV":
 else:
     raise ValueError(f"Detector type '{detector_type}' is not supported.")
 
-frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-fps = int(cap.get(cv2.CAP_PROP_FPS))
-
 frame_width, frame_height = 640, 480
 fps = cap.get(cv2.CAP_PROP_FPS) or 30 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -34,6 +32,9 @@ out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height
 
 poses = []
 trajectory = []
+
+angle_history = collections.deque(maxlen=5)
+last_angle = None
 
 frame_count = 0
 
@@ -44,33 +45,40 @@ while cap.isOpened():
 
     frame = cv2.resize(frame, (640, 480))
 
-    box, rect, mask = detector.detect(frame, roi)
+    box, data, mask = detector.detect(frame, roi)
 
-    if box is not None:
+    if box is not None and data is not None:
+        cx, cy, angle = data
+
+        if last_angle is not None:
+            diff = abs(angle - last_angle)
+            if diff > 20:
+                angle = last_angle
+
+        angle_history.append(angle)
+        smoothed_angle = sum(angle_history) / len(angle_history)
+        last_angle = smoothed_angle
+
         cv2.drawContours(frame, [box], 0, (0, 255, 0), 2)
-        if rect:
-          center = tuple(map(int, rect[0]))
-          width, height = rect[1]
-          angle = rect[2]
 
-          # Ajuste do ângulo
-          if width < height:
-              angle = 90 + angle
+        angle_text = f"Angle: {smoothed_angle:.1f}"
+        cv2.putText(
+            frame, angle_text, (cx + 10, cy - 10),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
+        )
 
-          # Exibir o ângulo ajustado
-          angle_text = f"Angle: {angle:.1f}"
-          cv2.putText(
-              frame, angle_text, (center[0] + 10, center[1] - 10),
-              cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
-          )
-
-          poses.append((frame_count, center[0], center[1], angle))
-          trajectory.append(center)
+        poses.append((frame_count, cx, cy, smoothed_angle))
+        trajectory.append((cx, cy))
 
     for point in trajectory:
         cv2.circle(frame, point, 2, (255, 0, 0), -1)
 
-    cv2.imshow('Frame', frame)
+    mask_rgb = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+    mask_rgb_resized = cv2.resize(mask_rgb, (frame.shape[1], frame.shape[0]))
+    combined_frame = np.hstack((frame, mask_rgb_resized))
+
+    cv2.imshow('Frame', combined_frame)
+
     out.write(frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
