@@ -1,10 +1,10 @@
 [project]
 name = "pose-estimation-project"
 version = "0.1.0"
-description = "Add your description here"
+description = "Projeto - Estimação da pose de um robô movel - ENGG64"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "matplotlib>=3.10.0",
     "opencv-python>=4.10.0.84",
-    "ultralytics>=8.3.61",
 ]
